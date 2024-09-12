@@ -5,7 +5,8 @@ import numpy as np
 import pandas as pd
 
 # Set random seed for reproducibility
-np.random.seed(43)
+random_state = 100
+np.random.seed(random_state)
 
 # Number of 1-second epochs for EO and EC
 num_epochs = 1000
@@ -42,7 +43,7 @@ df_epochs = df_epochs.sample(frac=1).reset_index(drop=True)
 df_epochs.head()
 
 # %%
-# Plot the simulated data
+# Plot of the first epoch to visualize the simulated data
 import matplotlib.pyplot as plt
 
 plt.figure(figsize=(10, 6))
@@ -94,10 +95,10 @@ df_features['label'] = df_epochs['label']
 X = df_features.drop(columns=['label'])
 y = df_features['label']
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=random_state)
 
 # Apply a Random Forest Classifier
-rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+rf_model = RandomForestClassifier(n_estimators=100, random_state=random_state)
 rf_model.fit(X_train, y_train)
 
 # Predict and evaluate
@@ -203,5 +204,74 @@ Z = Z.reshape(xx.shape)
 plt.contourf(xx, yy, Z, alpha=0.4, cmap='viridis')
 plt.title('PCA Projection with Decision Boundary')
 plt.show()
+
+# %%
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.signal import spectrogram
+
+# Example: Create a multichannel signal (e.g., 3 channels)
+fs = 1000  # Sampling frequency (Hz)
+t = np.linspace(0, 10, fs * 10)  # Time vector for 10 seconds
+
+# Channel 1: 10 Hz sine wave
+channel_1 = np.sin(2 * np.pi * 10 * t)
+
+# Channel 2: 20 Hz sine wave
+channel_2 = np.sin(2 * np.pi * 20 * t)
+
+# Channel 3: 30 Hz sine wave
+channel_3 = np.sin(2 * np.pi * 30 * t)
+
+# Combine into a multichannel signal (3 channels)
+multichannel_signal = np.vstack([channel_1, channel_2, channel_3])
+
+# Create subplots for each channel's spectrogram
+num_channels = multichannel_signal.shape[0]
+fig, axs = plt.subplots(num_channels, 1, figsize=(10, 8))
+
+for channel_idx in range(num_channels):
+    # Extract the channel data
+    channel_data = multichannel_signal[channel_idx, :]
+    
+    # Compute the spectrogram for the channel
+    f, t_spec, Sxx = spectrogram(channel_data, fs)
+    
+    # Plot the spectrogram in a subplot
+    axs[channel_idx].pcolormesh(t_spec, f, 10 * np.log10(Sxx), shading='gouraud')
+    axs[channel_idx].set_ylabel('Frequency [Hz]')
+    axs[channel_idx].set_xlabel('Time [sec]')
+    axs[channel_idx].set_title(f'Spectrogram for Channel {channel_idx + 1}')
+    
+plt.tight_layout()
+plt.show()
+
+# %%
+# Compute the spectrogram for each channel and average them
+Sxx_combined = np.zeros_like(spectrogram(multichannel_signal[0, :], fs)[2])
+
+for channel_idx in range(num_channels):
+    # Extract the channel data
+    channel_data = multichannel_signal[channel_idx, :]
+    
+    # Compute the spectrogram
+    f, t_spec, Sxx = spectrogram(channel_data, fs)
+    
+    # Add to the combined spectrogram
+    Sxx_combined += Sxx
+
+# Take the average across channels
+Sxx_combined /= num_channels
+
+# Plot the averaged spectrogram
+plt.figure(figsize=(10, 4))
+plt.pcolormesh(t_spec, f, 10 * np.log10(Sxx_combined), shading='gouraud')
+plt.colorbar(label='Power/Frequency (dB/Hz)')
+plt.ylabel('Frequency [Hz]')
+plt.xlabel('Time [sec]')
+plt.title('Averaged Spectrogram Across Channels')
+plt.show()
+
 
 # %%
